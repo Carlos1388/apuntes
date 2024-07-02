@@ -1,11 +1,11 @@
 ## INFO
-## INFO
+
 - **Name**: [Carlos Poveda]
-- **Email**: [carlospov4@gmail.com]
+- **Email**: [carlospovedat1388@gmail.com]
 
 Apuntes sobre serie de videos de MLOps - Zoomcamp
 
-[Link to video](https://youtu.be/s0uaFZSzwfI)
+[Link a videos](https://youtu.be/s0uaFZSzwfI)
 
 ## 1. Introducción a MLFlow
 
@@ -31,13 +31,14 @@ Es mejor si se trabaja con otras personas, tener un servidor centralizado. Para 
 mlflow.set_tracking_uri(uri="sqlite:///mlflow.db")
 ```
 
-## 2. Experimentos
+## 2. Experimentos y Runs
 
 Un experimento sirve para agrupar ejecuciones de modelos. Se pueden comparar diferentes modelos, parámetros, etc. Para crear un experimento se puede hacer con el siguiente comando:
 
 ```python
 mlflow.create_experiment(name="experiment_name")
 ```
+
 También podemos dar etiquetas a los experimentos o definir path para guardar los artefactos (modelos, datasets, etc). En las etiquetas podemos poner lo que queramos, por ejemplo, el nombre del proyecto, el nombre del programador, versión, etc.
 
 ```python
@@ -87,15 +88,17 @@ with mlflow.start_run():
     mlflow.log_metric("rmse", rmse) # <- registramos una métrica para la run que es el rmse
 ```
 
+## 3. Optimización de Hiperparámetros
+
 Guardar runs uno a uno es tedioso y puede no dar información suficiente como para comparar resultados, es mejor crear bucles de optimización de hiperparámetros e ir guardando cada run en un experimento. Por ejemplo, podemos pensar en definir unas métricas de evaluación, una lista de posibles modelos y para cada uno una lista de posibles hiperparámetros. Todo ello se puede etiquetar para poder hacer búsquedas más fácilmente.
 
 ![MLFlow](https://mlflow.org/docs/latest/_images/tag-exp-run-relationship.svg)
 
 Para crear bucles de optimización de hiperparámetros, se puede hacer utilizando [`hyperopt`](https://hyperopt.github.io/hyperopt/) junto con `mlflow`. Para instalar `hyperopt` se puede hacer con el siguiente comando:
 
-```python	
+```python
 pip install hyperopt
-```	
+```
 
 Para crear un bucle de optimización de hiperparámetros, se puede hacer con el siguiente código:
 
@@ -132,4 +135,83 @@ best = fmin(fn=objective,   # <- función objetivo
             trials=trials)   # <- objeto para guardar los resultados de cada iteración
 
 ```
+
+En la UI de MLFlow se pueden ver los resultados de cada iteración y seleccionar el mejor modelo, ya que se pueden ver los hiperparámetros que se han ido probando y las métricas que se han ido obteniendo. Después de la búsqueda de hiperparámetros lo mejor es guardar el modelo específico, entrenándolo de nuevo y registrándolo en MLFlow.
+
+
+
+
+## 4. Autologging
+
+Para algunas librerías, podemos registrar todos los parámetros de este proceso automáticamente.
+
+Lista de librerías que soportan esto:
+
+- `Fastai`,
+- `Gluon`,
+- `Keras/TensorFlow`,
+- `LangChain`,
+- `LightGBM`,
+- `OpenAI`,
+- `Paddle`,
+- `PySpark`,
+- `PyTorch`,
+- `Scikit-learn`,
+- `Spark`,
+- `Statsmodels`,
+- `XGBoost`.
+
+Para registrar automáticamente los parámetros de un modelo de estas librerías, se puede utilizar el autolog de `mlflow`. Para ello, primero hay que definir qué librerías se quiere autologgear:
+
+```python
+# Opción 1: Autologging solo para PyTorch
+mlflow.pytorch.autolog()
+
+# Opción 2: Autologging para todo excepto scikit-learn
+mlflow.sklearn.autolog(disable=True) # <- deshabilitamos el autologging de scikit-learn
+mlflow.autolog()   # <- autologging para todas las librerías que soportan autologging
+```
+
+Se puede ver qué se registra en cada caso en la [documentación de MLFlow](https://mlflow.org/docs/latest/tracking/autolog.html).
+
+Para ver los resultados de las métricas y parámetros registrados automáticamente, se puede hacer con `mlflow.last_active_run()`. Un ejemplo de esto sería:
+
+```python
+import mlflow
+
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_diabetes
+from sklearn.ensemble import RandomForestRegressor
+
+mlflow.autolog()
+
+db = load_diabetes()
+X_train, X_test, y_train, y_test = train_test_split(db.data, db.target)
+
+# Crear y entrenar el modelo
+rf = RandomForestRegressor(n_estimators=100, max_depth=6, max_features=3)
+rf.fit(X_train, y_train)
+
+# Usamos el modelo para hacer predicciones
+predictions = rf.predict(X_test)
+autolog_run = mlflow.last_active_run()
+print(autolog_run)
+# <Run:
+#    data=<RunData:
+#        metrics={'accuracy': 0.0},
+#        params={'n_estimators': '100', 'max_depth': '6', 'max_features': '3'},
+#        tags={'estimator_class': 'sklearn.ensemble._forest.RandomForestRegressor', 'estimator_name': 'RandomForestRegressor'}
+#    >,
+#    info=<RunInfo:
+#        artifact_uri='file:///Users/andrew/Code/mlflow/mlruns/0/0c0b.../artifacts',
+#        end_time=163...0,
+#        run_id='0c0b...',
+#        run_uuid='0c0b...',
+#        start_time=163...0,
+#        status='FINISHED',
+#        user_id='ME'>
+#    >
+# >
+```
+
 
