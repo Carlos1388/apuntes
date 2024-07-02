@@ -229,20 +229,95 @@ with open("path/to/model", "wb") as f:
 mlflow.log_artifact(local_path = "path/to/model", artifact_path = "models_pickle/")
 ```
 
-También podemos registrar el modelo con todos los parámetros utilizados, métricas, etc. Para ello, se puede hacer con el siguiente código:
+o también se puede hacer con el siguiente código:
 
 ```python
-with mlflow.start_run():
-    params = {......}
-    mlflow.log_params(params) # <- parámetros utilizados para entrenar el modelo
-    metrica1 = ...
-    metrica2 = ...
-    .
-    .
-    .
-    metrics = {"metrica1": metrica1, "metrica2": metrica2, ...}
+modelo = ... # modelo entrenado
 
-    mlflow.log_metrics(metrics) # <- métricas obtenidas al entrenar el modelo
-    mlflow.sklearn.log_model(modelo, artifact_path = "models_sklearn/") # <- modelo entrenado
+with mlflow.start_run() as run:
+    mlflow.sklearn.log_model(model, "mi_modelo_artifact")
+```
+
+en este caso se podría encontrar el modelo en el directorio de la run concreta desde la que se ha guardado el modelo.
+
+```python
+# Obtener la URI del modelo registrado como artefacto
+artifact_model_uri = f"runs:/{run.info.run_id}/mi_modelo_artifact"
+print("Modelo registrado como artefacto en:", artifact_model_uri)
+```
+
+También podemos registrar el modelo con nombres y apellidos, en este caso se guardará en una carpeta de modelos y se le puede asignar un estado del ciclo de vida (`staging`,`production`, etc). Para ello, se puede hacer con el siguiente código:	
+
+```python
+...
+model.fit(X_train, y_train)
+
+# Iniciar una ejecución de MLflow y registrar el modelo en el Registro de Modelos
+with mlflow.start_run() as run:
+    mlflow.sklearn.log_model(model, "random_forest_model_registered", registered_model_name="Nombre_modelo")
+
+# Obtener la URI del modelo registrado en el Registro de Modelos
+registered_model_uri = "models:/Nombre_modelo/1"
+print("Modelo registrado en el Registro de Modelos en:", registered_model_uri)
+```
+
+Para utilizar el modelo registrado, se puede hacer con los siguientes snippets.
+
+En el caso de querer cargar el modelo registrado como artefacto:
+
+```python
+
+# Cargar datos
+...
+X_train, X_test, y_train, y_test = train_test_split(...)
+
+# URI del modelo registrado como artefacto
+artifact_model_uri = "runs:/<run_id>/mi_modelo_artifact"
+
+# Cargar el modelo registrado como artefacto
+model_artifact = mlflow.sklearn.load_model(artifact_model_uri)
+
+# Hacer predicciones
+predictions_artifact = model_artifact.predict(X_test)
+print("Predicciones (artefacto):", predictions_artifact)
+```
+
+En el caso de querer cargar el modelo registrado en el Registro de Modelos:
+
+```python
+import mlflow
+import mlflow.sklearn
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+
+# Cargar datos
+...
+X_train, X_test, y_train, y_test = train_test_split(...)
+
+# URI del modelo registrado en el Registro de Modelos
+registered_model_uri = "models:/Nombre_modelo/1" # <- Aquí la diferencia, el path es diferente
+
+# Cargar el modelo registrado en el Registro de Modelos
+model_registered = mlflow.sklearn.load_model(registered_model_uri)
+
+# Hacer predicciones
+predictions_registered = model_registered.predict(X_test)
+print("Predicciones (Registro de Modelos):", predictions_registered)
+```
+
+## 6. Inferencia
+
+Podemos utilizar PyFunc, que ya viene como API dentro de MLFlow, para hacer inferencia con los modelos registrados. Si desde la UI de MLFlow se selecciona un modelo registrado, se puede ver el código que se necesita para hacer inferencia con ese modelo. Por ejemplo, para tener definido el modelo en pyfunc haríamos algo como esto:
+
+```python
+logged_model = "runs:/<run_id>/mi_modelo_artifact"
+
+loaded_model = mlflow.pyfunc.load_model(logged_model)
+```
+
+Una vez cargado, podemos hacer inferencia sobre dataframes de pandas. Por ejemplo:
+
+```python
+loaded_model.predict(pd.DataFrame(data))
 ```
 
