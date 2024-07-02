@@ -214,4 +214,35 @@ print(autolog_run)
 # >
 ```
 
+## 5. Model Registry
+
+El Model Registry es una funcionalidad de MLFlow que permite a los equipos de datos gestionar los modelos a lo largo de su ciclo de vida.
+
+La forma más básica de registrar un modelo es guardándolo como artifact en MLFlow. Para ello, se puede hacer con el siguiente código:
+
+```python
+modelo = ... # modelo entrenado
+
+with open("path/to/model", "wb") as f:
+    pickle.dump(modelo, f)
+
+mlflow.log_artifact(local_path = "path/to/model", artifact_path = "models_pickle/")
+```
+
+También podemos registrar el modelo con todos los parámetros utilizados, métricas, etc. Para ello, se puede hacer con el siguiente código:
+
+```python
+with mlflow.start_run():
+    params = {......}
+    mlflow.log_params(params) # <- parámetros utilizados para entrenar el modelo
+    metrica1 = ...
+    metrica2 = ...
+    .
+    .
+    .
+    metrics = {"metrica1": metrica1, "metrica2": metrica2, ...}
+
+    mlflow.log_metrics(metrics) # <- métricas obtenidas al entrenar el modelo
+    mlflow.sklearn.log_model(modelo, artifact_path = "models_sklearn/") # <- modelo entrenado
+```
 
