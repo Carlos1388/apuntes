@@ -89,9 +89,9 @@ with mlflow.start_run():
 
 Guardar runs uno a uno es tedioso y puede no dar información suficiente como para comparar resultados, es mejor crear bucles de optimización de hiperparámetros e ir guardando cada run en un experimento. Por ejemplo, podemos pensar en definir unas métricas de evaluación, una lista de posibles modelos y para cada uno una lista de posibles hiperparámetros. Todo ello se puede etiquetar para poder hacer búsquedas más fácilmente.
 
-[MLFlow](https://mlflow.org/docs/latest/_images/tag-exp-run-relationship.svg)
+![MLFlow](https://mlflow.org/docs/latest/_images/tag-exp-run-relationship.svg)
 
-Para crear bucles de optimización de hiperparámetros, se puede hacer utilizando `hyperopt` junto con `mlflow`. Para instalar `hyperopt` se puede hacer con el siguiente comando:
+Para crear bucles de optimización de hiperparámetros, se puede hacer utilizando [`hyperopt`](https://hyperopt.github.io/hyperopt/) junto con `mlflow`. Para instalar `hyperopt` se puede hacer con el siguiente comando:
 
 ```python	
 pip install hyperopt
